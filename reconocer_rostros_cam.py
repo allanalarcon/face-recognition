@@ -3,9 +3,9 @@ import face_recognition
 import pickle
 import time
 
-def reconocerRostro(archivoCodificado, modeloDeteccion, rutaVideo):
+def reconocerRostroVid(archivoCodificado, modeloDeteccion, rutaVideo, factor):
 
-    print("Cargando rostros codificados...")
+    print("\nCargando rostros codificados...")
     data = pickle.loads(open(archivoCodificado, "rb").read())
 
     # Inicia transmisión en vivo de la ruta
@@ -19,7 +19,7 @@ def reconocerRostro(archivoCodificado, modeloDeteccion, rutaVideo):
         ret, frame = video.read()
 
         # Cambiando tamaño de imagen para facilitar procesamiento
-        imageResize = cv2.resize(frame, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
+        imageResize = cv2.resize(frame, None, fx=factor, fy=factor, interpolation=cv2.INTER_AREA)
         r = frame.shape[1] / float(imageResize.shape[1])
 
         # Cambiando BGR a RGB debido a que dlib trabaja con RGB
@@ -33,6 +33,7 @@ def reconocerRostro(archivoCodificado, modeloDeteccion, rutaVideo):
 
         # Inicializa variable donde se almacenarán los nombres de las personas reconocidas
         nombres = []
+        veces = {}
 
         # Se recorren los rostros codificados para reconocerlos
         for codificado in codificados:
@@ -58,6 +59,7 @@ def reconocerRostro(archivoCodificado, modeloDeteccion, rutaVideo):
 
             # Agrega el nombre del rostro al arreglo de nombres
             nombres.append(nombre)
+            veces[nombre] = veces.get(nombre, 0) + 1
 
         # Recorre las coordenadas de los rostros para dibujar un roi y colocar el nombre
         for ((top, right, bottom, left), nombre) in zip(roi, nombres):
@@ -68,11 +70,12 @@ def reconocerRostro(archivoCodificado, modeloDeteccion, rutaVideo):
             left = int(left * r)
 
             # Dibuja un rectángulo en el rostro
-            cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+            cv2.rectangle(frame, (left, top), (right, bottom), (157, 93, 21), 1)
 
             # Coloca el nombre de la persona
-            y = top - 15 if top - 15 > 15 else top + 15
-            cv2.putText(frame, nombre, (left, y), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 0, 0), 1)
+            cv2.rectangle(frame, (left, bottom), (right, bottom + 30), (157, 93, 21), cv2.FILLED)
+            cv2.putText(frame, nombre, (left + 3, bottom + 11), cv2.FONT_ITALIC, 0.4, (255, 255, 255), 1)
+            cv2.putText(frame, 'Veces: ' + str(veces[nombre]), (left + 3, bottom + 26), cv2.FONT_ITALIC, 0.4, (255, 255, 255), 1)
 
         cv2.imshow("Video", frame)
 
@@ -82,4 +85,4 @@ def reconocerRostro(archivoCodificado, modeloDeteccion, rutaVideo):
     video.release()
     cv2.destroyAllWindows()
 
-reconocerRostro('codificados.pickle', 'cnn', 0)
+#reconocerRostro('codificados.pickle', 'cnn', 0)

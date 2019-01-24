@@ -5,9 +5,9 @@ import pickle
 import os
 from imutils import paths
 
-def entrenar(rutaDataset, archivoCodificado, modeloDeteccion):
+def entrenar(rutaDataset, archivoCodificado, modeloDeteccion, altura):
 
-    print("Obteniendo imágenes de dataset...")
+    print("\nObteniendo imágenes del dataset...")
 
     # Se obtienen las rutas de las imágenes del dataset
     rutaImagenes = list(paths.list_images(rutaDataset))
@@ -30,9 +30,11 @@ def entrenar(rutaDataset, archivoCodificado, modeloDeteccion):
         imageTemp = cv2.imdecode(arrayTemp, cv2.IMREAD_UNCHANGED)
 
         # Cambiando tamaño de imagen para facilitar procesamiento
-        imageResize = cv2.resize(imageTemp, (int(imageTemp.shape[1]*350/imageTemp.shape[0]), 350), interpolation = cv2.INTER_AREA)
-
-        imageRGB = cv2.cvtColor(imageResize, cv2.COLOR_BGR2RGB)
+        if altura > imageTemp.shape[0]:
+            imageRGB = cv2.cvtColor(imageTemp, cv2.COLOR_BGR2RGB)
+        else:
+            imageResize = cv2.resize(imageTemp, (int(imageTemp.shape[1]*altura/imageTemp.shape[0]), altura), interpolation = cv2.INTER_AREA)
+            imageRGB = cv2.cvtColor(imageResize, cv2.COLOR_BGR2RGB)
 
         # Obtener coordenadas de cada una de los rostros de la imagen
         roi = face_recognition.face_locations(imageRGB, model=modeloDeteccion)
@@ -52,4 +54,4 @@ def entrenar(rutaDataset, archivoCodificado, modeloDeteccion):
     f.write(pickle.dumps(data))
     f.close()
 
-entrenar('dataset', 'codificados.pickle', 'cnn')
+#entrenar('dataset', 'codificados.pickle', 'cnn')

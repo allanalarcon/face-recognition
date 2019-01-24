@@ -2,25 +2,27 @@ import face_recognition
 import pickle
 import cv2
 
-def reconocerRostro(archivoCodificado, modeloDeteccion, rutaImagen):
+def reconocerRostroImg(archivoCodificado, modeloDeteccion, rutaImagen, altura):
 
-    print("Cargando rostros codificados...")
+    print("\nCargando rostros codificados...")
     data = pickle.loads(open(archivoCodificado, "rb").read())
 
     # Se obtiene la imagen
     image = cv2.imread(rutaImagen)
 
     # Cambiando tamaño de imagen para poder visualizar
-    # ESTE TAMAÑO ES MUY GRANDE PARA LA LAPTOP, PERO CON ALTO DE 400 UNA PRUEBA SE DEMORÓ 70s
-    imageResize = cv2.resize(image, (int(image.shape[1]*500/image.shape[0]), 500), interpolation = cv2.INTER_AREA)
+    imageResize = cv2.resize(image, (int(image.shape[1]*700/image.shape[0]), 700), interpolation = cv2.INTER_AREA)
 
     # Cambiando tamaño de imagen para facilitar procesamiento
-    # CON ESTA SEGUNDA REDUCCIÓN CON LA MISMA IMAGEN DE LA PRUEBA ANTERIOR DEMORÓ 35s
-    imageResizeMore = cv2.resize(imageResize, None, fx=0.5, fy=0.5, interpolation = cv2.INTER_AREA)
-
-    # Cambiando BGR a RGB debido a que dlib trabaja con RGB
-    imageRGB = cv2.cvtColor(imageResizeMore, cv2.COLOR_BGR2RGB)
-    print(imageResize.shape)
+    if altura > image.shape[0]:
+        # Cambiando BGR a RGB debido a que dlib trabaja con RGB
+        imageRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        r = imageResize.shape[1] / float(image.shape[1])
+    else:
+        imageResizeMore = cv2.resize(image, (int(image.shape[1]*altura/image.shape[0]), altura), interpolation = cv2.INTER_AREA)
+        # Cambiando BGR a RGB debido a que dlib trabaja con RGB
+        imageRGB = cv2.cvtColor(imageResizeMore, cv2.COLOR_BGR2RGB)
+        r = imageResize.shape[1] / float(imageResizeMore.shape[1])
 
     print("Reconociendo rostros de la imagen...")
     # Obtener coordenadas de cada una de los rostros de la imagen
@@ -31,6 +33,7 @@ def reconocerRostro(archivoCodificado, modeloDeteccion, rutaImagen):
 
     # Inicializa variable donde se almacenarán los nombres de las personas reconocidas
     nombres = []
+    veces = {}
 
     # Se recorren los rostros codificados para reconocerlos
     for codificado in codificados:
@@ -56,23 +59,25 @@ def reconocerRostro(archivoCodificado, modeloDeteccion, rutaImagen):
 
         # Agrega el nombre del rostro al arreglo de nombres
         nombres.append(nombre)
+        veces[nombre] = veces.get(nombre, 0) + 1
 
     # Recorre las coordenadas de los rostros para dibujar un roi y colocar el nombre
     for ((top, right, bottom, left), nombre) in zip(roi, nombres):
         # Se vuelve al tamaño del primer resize
-        top = int(top * 2)
-        right = int(right * 2)
-        bottom = int(bottom * 2)
-        left = int(left * 2)
+        top = int(top * r)
+        right = int(right * r)
+        bottom = int(bottom * r)
+        left = int(left * r)
 
         # Dibuja un rectángulo en el rostro
-        cv2.rectangle(imageResize, (left, top), (right, bottom), (255, 0, 0), 2)
+        cv2.rectangle(imageResize, (left, top), (right, bottom), (142, 85, 20), 1)
 
         # Coloca el nombre de la persona
-        y = top - 15 if top - 15 > 15 else top + 15
-        cv2.putText(imageResize, nombre, (left, y), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 0, 0), 1)
-
+        cv2.rectangle(imageResize, (left, bottom), (right, bottom + 30), (142, 85, 20), cv2.FILLED)
+        cv2.putText(imageResize, nombre, (left + 3, bottom + 11), cv2.FONT_ITALIC, 0.4, (255, 255, 255), 1)
+        cv2.putText(imageResize, 'Veces: ' + str(veces[nombre]), (left + 3, bottom + 26), cv2.FONT_ITALIC, 0.4, (255, 255, 255), 1)
+    
     cv2.imshow("Imagen", imageResize)
     cv2.waitKey(0)
 
-reconocerRostro('codificados.pickle', 'cnn', "2.jpg")
+#reconocerRostro('codificados.pickle', 'cnn', "2.jpg")
